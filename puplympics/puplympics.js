@@ -1,20 +1,20 @@
-const fs = require('fs'),
-  puplympians = {},
-  raceLength =  2//3461,
-  pups = []
-
-// read and clean the .txt file, run the tests
-fs.readFile('input.txt', (err, data) => { 
+const fs = require('fs')
+let puplympians = {},
+  pups = [],
+  raceLength = 3461
+  
+// read and clean the .txt file
+fs.readFile('input.txt', (err, data) => {
     if (err) throw err; 
     const content = data.toString()
     processFile(content)
-    // winnerDist()
+    winnerDist()
+    pointsPerSecond()
     winnerPoints()
 }) 
 
 // dog object constructor!
-function Dog(name, fps, maxruntime, rest){
-  this.name=name,
+function Dog(fps, maxruntime, rest){
   this.fps=fps,
   this.maxruntime=maxruntime,
   this.rest=rest,
@@ -31,16 +31,13 @@ function Dog(name, fps, maxruntime, rest){
     if(remainder >= this.maxruntime){
       let totalDist = feetPerCircuit + feetPerRound
       this.distanceTraveled = totalDist
-      
     } else {
      // if dog is still running when time is up
       let totalDist = (remainder * this.fps) + feetPerCircuit
       this.distanceTraveled = totalDist
-      // console.log(this.distanceTraveled)
     }
   }
 }
-
 
 // convert the .txt into a dev-friendly data structure
 function processFile(content){
@@ -48,15 +45,12 @@ function processFile(content){
     // separate data per line
     dogsData = refinedContent.split('.'),
     dogDataArray = []
-    // format to arrays 
-    // console.log("line 27", dogsData)
     for(dog in dogsData){
       // takes care of the weird empty string by requiring length
       if(dogsData[dog].length>0){
         let dogs = dogsData[dog].split(' ')
         dogDataArray.push(dogs)
       }
-      
     }
     // format to objects 
     let keys = ["name", "fps", "maxruntime", "rest"]
@@ -75,7 +69,7 @@ function processFile(content){
     }
 }
 
-// kept this the same 
+// kept this the same - calculates the total distance traveled by each pooch and returns the winner for farthest distance 
 function winnerDist(){
   let distances = []
   pups.forEach(function(dog){
@@ -95,7 +89,6 @@ function winnerDist(){
       totalDist = (remainder * dog.fps) + feetPerCircuit
       distances.push(totalDist)
     }
-    console.log(distances)
   })
   // calculate which dog ran the farthest
   let farthest = 0
@@ -106,36 +99,51 @@ function winnerDist(){
       winner = pups[i].name
     }
   }
-  console.log(winner + " wins!! - traveling " + farthest + " feet")
-  
+  console.log(winner + " wins farthest distance!! - traveling " + farthest + " feet")
 }
 
-function winnerPoints(){
+//KNOWN FLAW - does not account for 3-way tie   :[
+function pointsPerSecond(){
   // for every second in the race
   for(let i=1;i<raceLength+1;i++){
-    // check each dog's distance
+    // checks each dog's distance at that second, adds to distances array to compare
     let dogs = Object.keys(puplympians)
     let distances = []
     for (let j = 0; j<dogs.length; j++){
       puplympians[dogs[j]].calculateDistance(i)
       distances.push(puplympians[dogs[j]].distanceTraveled)
     }
-    console.log(distances)
-
-    // increment one point for the dog that is the farthest
-    let farthest = distances[0]
+    // compare distances, find indexOf farthest dog/dogs
+    let farthest = 0
     let farthestPup = 0
+    let tie = 0
     for(let k=0; k <= distances.length; k++){
-      
-      if(distances[k]>farthest){
+      if(distances[k]>=farthest){
         farthestPup = k
         farthest = distances[k]
-      } else {
-        // in case of a tie
-        console.log("wtf")
+      } else if (distances[k + 1] == farthest){
+        tie = k+1
       }
     }
-    puplympians[dogs[farthestPup]].points ++
+    // increment one point for the dog that is the farthest
+    // if there's two tied, each gets a point
+    if (tie === 0){
+      puplympians[dogs[farthestPup]].points ++
+    } else {
+      puplympians[dogs[farthestPup]].points ++
+      puplympians[dogs[tie]].points ++
+    }
   }
-  console.log(puplympians)
 }
+// returns the dog with the most points by the end of the race
+function winnerPoints(){
+  let pointsArr = []
+  // loop through dogs points, add to array
+  Object.keys(puplympians).forEach(dog => {
+    pointsArr.push(puplympians[dog].points)
+  })
+  // find index of largest number
+  let winnerIndex = pointsArr.indexOf(Math.max(...pointsArr))
+  console.log(pups[winnerIndex].name + " wins most points!! - collecting " + pups[winnerIndex].points + " points")
+}
+
